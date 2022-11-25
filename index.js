@@ -19,6 +19,7 @@ async function run(){
     try{
         const usersCollection = client.db('sellZoneDB').collection('usersCollection');
         const catagory = client.db('sellZoneDB').collection('catagory');
+        const phonesCollection = client.db('sellZoneDB').collection('phonesCollection');
 
         app.post('/add_user', async(req, res) => {
             const user = req.body;
@@ -44,6 +45,12 @@ async function run(){
         app.get('/catagory', async(req, res) => {
             const query = {};
             const result = await catagory.find(query).toArray();
+            res.send(result);
+        })
+
+        app.get('/all/phones', async(req, res) => {
+            const query = {};
+            const result = await phonesCollection.find(query).toArray();
             res.send(result);
         })
 
