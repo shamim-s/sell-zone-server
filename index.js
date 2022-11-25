@@ -18,10 +18,32 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
     try{
         const usersCollection = client.db('sellZoneDB').collection('usersCollection');
+        const catagory = client.db('sellZoneDB').collection('catagory');
 
         app.post('/add_user', async(req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
+
+        app.put('/add/newuser', async(req, res) => {
+            const user = req.body;
+            const filter = {email: user.email};
+            const option = {upsert: true};
+            const updatedDoc = {
+                $set: {
+                    name: user.name,
+                    img: user.img,
+                    role: 'buyer'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+        })
+
+        app.get('/catagory', async(req, res) => {
+            const query = {};
+            const result = await catagory.find(query).toArray();
             res.send(result);
         })
 
