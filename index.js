@@ -54,6 +54,13 @@ async function run(){
             res.send(result);
         })
 
+        app.get('/phones/:cataId', async(req, res) => {
+            const cataId = req.params.cataId;
+            const filter = {cataId: cataId};
+            const result = await phonesCollection.find(filter).toArray();
+            res.send(result);
+        })
+
     }
     finally{
 
