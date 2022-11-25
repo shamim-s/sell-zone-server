@@ -61,6 +61,13 @@ async function run(){
             res.send(result);
         })
 
+        app.get('/catagory/:cataId', async(req, res) => {
+            const cataId = req.params.cataId;
+            const query = {cataId: cataId};
+            const result = await catagory.findOne(query);
+            res.send(result);
+        })
+
     }
     finally{
 
