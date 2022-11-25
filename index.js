@@ -20,10 +20,17 @@ async function run(){
         const usersCollection = client.db('sellZoneDB').collection('usersCollection');
         const catagory = client.db('sellZoneDB').collection('catagory');
         const phonesCollection = client.db('sellZoneDB').collection('phonesCollection');
+        const cartCollection = client.db('sellZoneDB').collection('cartCollection');
 
         app.post('/add_user', async(req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
+
+        app.post('/addCart', async(req, res) => {
+            const item = req.body;
+            const result = await cartCollection.insertOne(item);
             res.send(result);
         })
 
@@ -75,6 +82,13 @@ async function run(){
             const result = await phonesCollection.findOne(filter);
             res.send(result);
         })
+
+        app.get('/admin/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email};
+            const user = await usersCollection.findOne(query);
+            res.send({isAdmin: user?.role === 'admin'});
+          })
 
     }
     finally{
