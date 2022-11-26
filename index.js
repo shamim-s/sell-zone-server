@@ -97,6 +97,12 @@ async function run(){
             res.send({isSeller: user?.role === 'seller'});
           })
 
+        app.get('/users/buyers', async(req, res) => {
+            const filter = {role:'buyer'};
+            const result = await usersCollection.find(filter).toArray();
+            res.send(result);
+        })
+
     }
     finally{
 
