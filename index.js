@@ -83,7 +83,7 @@ async function run(){
             res.send(result);
         })
 
-        app.get('/admin/:email', async(req, res) => {
+        app.get('/user/admin/:email', async(req, res) => {
             const email = req.params.email;
             const query = {email: email};
             const user = await usersCollection.findOne(query);
@@ -101,6 +101,19 @@ async function run(){
             const filter = {role:'buyer'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
+        })
+
+        app.get('/users/sellers', async(req, res) => {
+            const filter = {role:'seller'};
+            const result = await usersCollection.find(filter).toArray();
+            res.send(result);
+        })
+
+        app.get('/seller/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email};
+            const user = await usersCollection.findOne(query);
+            res.send({isVerified: user?.status === 'verified'});
         })
 
     }
