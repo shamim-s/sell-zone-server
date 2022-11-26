@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
+const { query } = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -21,19 +22,31 @@ async function run(){
         const catagory = client.db('sellZoneDB').collection('catagory');
         const phonesCollection = client.db('sellZoneDB').collection('phonesCollection');
         const cartCollection = client.db('sellZoneDB').collection('cartCollection');
+        const verifyRequestColletion = client.db('sellZoneDB').collection('verifyRequestColletion');
 
+        //Adding user to database when register
         app.post('/add_user', async(req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result);
         })
 
+        //Add item in cart
         app.post('/addCart', async(req, res) => {
             const item = req.body;
             const result = await cartCollection.insertOne(item);
             res.send(result);
         })
 
+
+        //Posting seller profile verification request
+        app.post('/seller/verify_req', async(req, res) => {
+            const request = req.body;
+            const result = await verifyRequestColletion.insertOne(request);
+            res.send(result);
+        })
+
+        //adding user when Logging with Google
         app.put('/add/newuser', async(req, res) => {
             const user = req.body;
             const filter = {email: user.email};
@@ -49,24 +62,28 @@ async function run(){
             res.send(result);
         })
 
+        //Geting Catagory for product
         app.get('/catagory', async(req, res) => {
             const query = {};
             const result = await catagory.find(query).toArray();
             res.send(result);
         })
 
+        //Get All Phones from database
         app.get('/all/phones', async(req, res) => {
             const query = {};
             const result = await phonesCollection.find(query).toArray();
             res.send(result);
         })
 
+        //Get Phone by Category id
         app.get('/phones/:cataId', async(req, res) => {
             const cataId = req.params.cataId;
             const filter = {cataId: cataId};
             const result = await phonesCollection.find(filter).toArray();
             res.send(result);
         })
+
 
         app.get('/catagory/:cataId', async(req, res) => {
             const cataId = req.params.cataId;
@@ -76,6 +93,8 @@ async function run(){
             res.send(result);
         })
 
+
+        //Get Single phone by id
         app.get('/all/phones/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id:ObjectId(id)}
@@ -83,6 +102,8 @@ async function run(){
             res.send(result);
         })
 
+
+        //Checking is user admin
         app.get('/user/admin/:email', async(req, res) => {
             const email = req.params.email;
             const query = {email: email};
@@ -90,6 +111,7 @@ async function run(){
             res.send({isAdmin: user?.role === 'admin'});
           })
 
+        //Checking is user seller
         app.get('/user/seller/:email', async(req, res) => {
             const email = req.params.email;
             const query = {email: email};
@@ -97,23 +119,62 @@ async function run(){
             res.send({isSeller: user?.role === 'seller'});
           })
 
+        //get all buyers
         app.get('/users/buyers', async(req, res) => {
             const filter = {role:'buyer'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
+        //Get all sellers
         app.get('/users/sellers', async(req, res) => {
             const filter = {role:'seller'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
+        //get seller by id
         app.get('/seller/:email', async(req, res) => {
             const email = req.params.email;
             const query = {email: email};
             const user = await usersCollection.findOne(query);
             res.send({isVerified: user?.status === 'verified'});
+        })
+
+        //Checking is user sent verify req
+        app.get('/seller/request/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {seller: email};
+            const request = await verifyRequestColletion.findOne(query);
+            res.send({isPending: request?.seller === email })
+        })
+
+        app.get('/verify/request', async(req, res) => {
+            const query = {};
+            const result = await verifyRequestColletion.find(query).toArray();
+            res.send(result);
+        })
+
+        //Accepting user verify
+        app.put('/request/accept/:email', async(req, res) => {
+            const email = req.params.email;
+            const filter = {email: email};
+            const option = {upsert: true};
+            const updatedDoc = {
+                $set: {
+                    status: 'verified'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+        })
+
+        //Delete request form db colection
+        app.delete('/request/delete/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await verifyRequestColletion.deleteOne(filter);
+            res.send(result);
         })
 
     }
