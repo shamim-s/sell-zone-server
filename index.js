@@ -16,6 +16,22 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.zn49gp5.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+const VerifyJWT = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if(!authHeader){
+      return res.status(401).send("Unauthorized Access");
+    }
+  
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.USER_ACCESS_TOKEN, function(err, decoded){
+      if(err){
+        return res.status(401).send("Unauthorized Access");
+      }
+      req.decoded = decoded;
+      next();
+    })
+  }
+
 async function run(){
     try{
         const usersCollection = client.db('sellZoneDB').collection('usersCollection');
@@ -135,14 +151,14 @@ async function run(){
           })
 
         //get all buyers
-        app.get('/users/buyers', async(req, res) => {
+        app.get('/users/buyers', VerifyJWT, async(req, res) => {
             const filter = {role:'buyer'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
         //Get all sellers
-        app.get('/users/sellers', async(req, res) => {
+        app.get('/users/sellers', VerifyJWT, async(req, res) => {
             const filter = {role:'seller'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
@@ -171,7 +187,7 @@ async function run(){
         })
 
         //Accepting user verify
-        app.put('/request/accept/:email', async(req, res) => {
+        app.put('/request/accept/:email', VerifyJWT, async(req, res) => {
             const email = req.params.email;
             const filter = {email: email};
             const option = {upsert: true};
@@ -184,7 +200,7 @@ async function run(){
             res.send(result);
         })
 
-        //Delete request form db colection
+        //Delete request form db collection
         app.delete('/request/delete/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
@@ -193,7 +209,7 @@ async function run(){
         })
 
         //Delete seller product
-        app.delete('/delete/:id', async(req, res) => {
+        app.delete('/delete/:id', VerifyJWT, async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await phonesCollection.deleteOne(filter);
@@ -201,7 +217,7 @@ async function run(){
         })
 
         //Delete Seller
-        app.delete('/sellers/:id', async(req, res) => {
+        app.delete('/sellers/:id', VerifyJWT, async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await usersCollection.deleteOne(filter);
@@ -209,7 +225,7 @@ async function run(){
         })
 
         // //Delete User
-        app.delete('/users/:id', async(req, res) => {
+        app.delete('/users/:id', VerifyJWT, async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await usersCollection.deleteOne(filter);
@@ -217,7 +233,7 @@ async function run(){
         })
 
         //Get Seller Products by seller email
-        app.get('/my_products/:email', async(req, res) => {
+        app.get('/my_products/:email', VerifyJWT, async(req, res) => {
             const email = req.params.email;
             const filter = {sellerEmail: email};
             const result = await phonesCollection.find(filter).toArray();
@@ -274,6 +290,19 @@ async function run(){
         const filter = {};
         const result = await advertiseColletion.deleteMany(filter);
         res.send(result);
+      })
+
+
+      //jwt VERIFY process
+      app.get('/jwt', async(req, res) => {
+        const email = req.query.email;
+        const query = {email: email};
+        const user = await usersCollection.findOne(query);
+        if(user && user?.email){
+          const token = jwt.sign(user, process.env.USER_ACCESS_TOKEN,{expiresIn:'5d'});
+          return res.send({accessToken: token});
+        }
+        res.status(401).send("Unauthorized");
       })
 
     }
