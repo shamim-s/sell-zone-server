@@ -94,7 +94,6 @@ async function run(){
 
         app.get('/catagory/:cataId', async(req, res) => {
             const cataId = req.params.cataId;
-            console.log(id);
             const query = {cataId: cataId};
             const result = await catagory.findOne(query);
             res.send(result);
@@ -189,6 +188,22 @@ async function run(){
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await phonesCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+        //Delete Seller
+        app.delete('/sellers/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await usersCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+        //Delete User
+        app.delete('/users/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await usersCollection.deleteOne(filter);
             res.send(result);
         })
 
