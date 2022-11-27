@@ -23,6 +23,8 @@ async function run(){
         const phonesCollection = client.db('sellZoneDB').collection('phonesCollection');
         const cartCollection = client.db('sellZoneDB').collection('cartCollection');
         const verifyRequestColletion = client.db('sellZoneDB').collection('verifyRequestColletion');
+        const advertiseColletion = client.db('sellZoneDB').collection('advertiseColletion');
+        const reportColletion = client.db('sellZoneDB').collection('reportColletion');
 
         //Adding user to database when register
         app.post('/add_user', async(req, res) => {
@@ -50,6 +52,13 @@ async function run(){
         app.post('/add/product', async(req, res) => {
             const product = req.body;
             const result = await phonesCollection.insertOne(product);
+            res.send(result);
+        })
+
+        //add Advertise Items to database
+        app.post('/advertise/add', async(req, res) => {
+            const item = req.body;
+            const result = await advertiseColletion.insertOne(item);
             res.send(result);
         })
 
@@ -199,7 +208,7 @@ async function run(){
             res.send(result);
         })
 
-        //Delete User
+        // //Delete User
         app.delete('/users/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
@@ -212,6 +221,13 @@ async function run(){
             const email = req.params.email;
             const filter = {sellerEmail: email};
             const result = await phonesCollection.find(filter).toArray();
+            res.send(result);
+        })
+
+        //Get advertise item form database
+        app.get('/advertise/item', async(req, res) => {
+            const query = {};
+            const result = await advertiseColletion.find(query).toArray();
             res.send(result);
         })
 
