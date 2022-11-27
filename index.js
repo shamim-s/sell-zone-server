@@ -231,6 +231,51 @@ async function run(){
             res.send(result);
         })
 
+        //Get advertise item form database
+        app.get('/running/add', async(req, res) => {
+            const query = {};
+            const result = await advertiseColletion.find(query).toArray();
+            res.send({isRunning: result.length === 1});
+        })
+
+        //when seller gointo to make product Advertise, update the original
+        //product isAdvertising true
+        app.put('/advertise/start/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const option = {upsert: true};
+            const updatedDoc = {
+            $set: {
+                isAdvertising: true
+            }
+            }
+            const result = await phonesCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+      })
+
+        //when seller gointo to stop product Advertise, update the original
+        //product isAdvertising false
+        app.put('/advertise/stop/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const option = {upsert: true};
+            const updatedDoc = {
+            $set: {
+                isAdvertising: false
+            }
+            }
+            const result = await phonesCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+      })
+
+
+      //Delete Advertise data from database when seller stop Advertise
+      app.delete('/advertise/delete', async(req, res) => {
+        const filter = {};
+        const result = await advertiseColletion.deleteMany(filter);
+        res.send(result);
+      })
+
     }
     finally{
 
