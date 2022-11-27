@@ -46,6 +46,13 @@ async function run(){
             res.send(result);
         })
 
+        //Add product to databsae
+        app.post('/add/product', async(req, res) => {
+            const product = req.body;
+            const result = await phonesCollection.insertOne(product);
+            res.send(result);
+        })
+
         //adding user when Logging with Google
         app.put('/add/newuser', async(req, res) => {
             const user = req.body;
