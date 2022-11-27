@@ -16,19 +16,20 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.zn49gp5.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
 const VerifyJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
+    
     if(!authHeader){
-      return res.status(401).send("Unauthorized Access");
+        return res.status(401).send("Unauthorized Access");
     }
-  
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.USER_ACCESS_TOKEN, function(err, decoded){
-      if(err){
-        return res.status(401).send("Unauthorized Access");
-      }
-      req.decoded = decoded;
-      next();
+        if(err){
+            return res.status(401).send("Unauthorized Access");
+        }
+        req.decoded = decoded;
+        next();
     })
   }
 
@@ -41,6 +42,20 @@ async function run(){
         const verifyRequestColletion = client.db('sellZoneDB').collection('verifyRequestColletion');
         const advertiseColletion = client.db('sellZoneDB').collection('advertiseColletion');
         const reportColletion = client.db('sellZoneDB').collection('reportColletion');
+
+
+        //Verify Admin
+        const verifyAdmin = async (req, res, next) => {
+            const adminEmail = req.decoded.email;
+            const filter = {email: adminEmail};
+            const user = await usersCollection.findOne(filter);
+
+            if(user?.role !== "admin"){
+               return res.status(403).send({message: "Forbiden Access"});
+            }
+            next();
+        }
+
 
         //Adding user to database when register
         app.post('/add_user', async(req, res) => {
@@ -151,14 +166,14 @@ async function run(){
           })
 
         //get all buyers
-        app.get('/users/buyers', VerifyJWT, async(req, res) => {
+        app.get('/users/buyers', VerifyJWT, verifyAdmin, async(req, res) => {
             const filter = {role:'buyer'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
         //Get all sellers
-        app.get('/users/sellers', VerifyJWT, async(req, res) => {
+        app.get('/users/sellers', VerifyJWT, verifyAdmin, async(req, res) => {
             const filter = {role:'seller'};
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
@@ -187,7 +202,7 @@ async function run(){
         })
 
         //Accepting user verify
-        app.put('/request/accept/:email', VerifyJWT, async(req, res) => {
+        app.put('/request/accept/:email', VerifyJWT, verifyAdmin, async(req, res) => {
             const email = req.params.email;
             const filter = {email: email};
             const option = {upsert: true};
@@ -209,7 +224,7 @@ async function run(){
         })
 
         //Delete seller product
-        app.delete('/delete/:id', VerifyJWT, async(req, res) => {
+        app.delete('/delete/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await phonesCollection.deleteOne(filter);
@@ -217,7 +232,7 @@ async function run(){
         })
 
         //Delete Seller
-        app.delete('/sellers/:id', VerifyJWT, async(req, res) => {
+        app.delete('/sellers/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await usersCollection.deleteOne(filter);
@@ -225,7 +240,7 @@ async function run(){
         })
 
         // //Delete User
-        app.delete('/users/:id', VerifyJWT, async(req, res) => {
+        app.delete('/users/:id', async(req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await usersCollection.deleteOne(filter);
