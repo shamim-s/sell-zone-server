@@ -184,6 +184,22 @@ async function run(){
             res.send(result);
         })
 
+        //Delete seller product
+        app.delete('/delete/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await phonesCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+        //Get Seller Products by seller email
+        app.get('/my_products/:email', async(req, res) => {
+            const email = req.params.email;
+            const filter = {sellerEmail: email};
+            const result = await phonesCollection.find(filter).toArray();
+            res.send(result);
+        })
+
     }
     finally{
 
