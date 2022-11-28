@@ -377,6 +377,35 @@ async function run(){
         res.send(result);
       })
 
+      //post report to admin
+      app.post('/report', async(req, res) => {
+        const report = req.body;
+        const result = await reportColletion.insertOne(report);
+        res.send(result);
+      })
+
+      //get report by admin
+      app.get('/reports/all', async(req, res) => {
+        const query = {};
+        const result = await reportColletion.find(query).toArray();
+        res.send(result);
+      })
+
+      //Delete reported item by admin
+      app.post('/report/delete', VerifyJWT, verifyAdmin, async(req, res) => {
+        const report = req.body;
+        const reportId = report._id;
+        const reportFilter = {_id:ObjectId(reportId)};
+        const reportDeleteResult = await reportColletion.deleteOne(reportFilter);
+
+        //After deleteting report from report collection 
+        //Delete this product form product collection
+        const productId = report.productId;
+        const productFilter = {_id:ObjectId(productId)};
+        const deletedProductResult = await phonesCollection.deleteOne(productFilter);
+        res.send(reportDeleteResult);
+      })
+
 
       //jwt VERIFY process
       app.get('/jwt', async(req, res) => {
