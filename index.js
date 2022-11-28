@@ -7,6 +7,8 @@ const { query } = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
 
+const stripe = require('stripe')(process.env.STRIPE_KEY);
+
 
 // middleware
 app.use(cors());
@@ -42,6 +44,7 @@ async function run(){
         const verifyRequestColletion = client.db('sellZoneDB').collection('verifyRequestColletion');
         const advertiseColletion = client.db('sellZoneDB').collection('advertiseColletion');
         const reportColletion = client.db('sellZoneDB').collection('reportColletion');
+        const paymentsCollection = client.db('sellZoneDB').collection('paymentsCollection');
 
 
         //Verify Admin
@@ -116,6 +119,22 @@ async function run(){
             res.send(result);
         })
 
+        //Get Cart products
+        app.get('/cart/products/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email};
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //Get cart item by id
+        app.get('/cart/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await cartCollection.findOne(filter);
+            res.send(result);
+        })
+
         //Get All Phones from database
         app.get('/all/phones', async(req, res) => {
             const query = {};
@@ -148,6 +167,57 @@ async function run(){
             res.send(result);
         })
 
+        //Payment 
+        app.post('/create-payment-intent', async(req, res) => {
+            const cartItem = req.body;
+            const price = parseInt(cartItem.price);
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types" : [
+                    "card"
+                ]
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        app.post('/cart/payments', async(req, res) => {
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+
+            //Updating cart item after payment success
+            const id = payment.cartId;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+                $set:{
+                    paid: true,
+                }
+            }
+            const updatedCartItem = await cartCollection.updateOne(filter, updatedDoc);
+
+            //Update product status aviable to sold
+            const productId = payment.productId;
+            const productQuery = {_id:ObjectId(productId)};
+            const updatedProductDoc = {
+                $set: {
+                    status: 'sold',
+                    isAdvertising: false
+                }
+            }
+
+            const updatedProductResult = await phonesCollection.updateOne(productQuery, updatedProductDoc);
+
+            //Delete this item from Advertise collection
+            const adId = payment.productId;
+            const adFilter = {productId: adId};
+            const deletedResult = await advertiseColletion.deleteOne(adFilter);
+            res.send(result);
+        })
 
         //Checking is user admin
         app.get('/user/admin/:email', async(req, res) => {
